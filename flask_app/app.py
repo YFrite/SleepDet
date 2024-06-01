@@ -2,7 +2,7 @@ import json
 import os
 
 import numpy as np
-from flask import Flask, render_template, request, redirect, url_for, send_file, jsonify
+from flask import Flask, render_template, request, redirect, url_for, send_file, jsonify, flash
 from scripts.converter import parse_edf
 from scripts.check_input_values import check_input_values, check_checkboxes
 from scripts.template_report import create_docx_file
@@ -45,17 +45,17 @@ def allowed_file(filename):
 
 def checker(params, checkbox_data, filename):
     if filename == "":
-        print('Файл не выбран. Выберите файл')
+        flash('Файл не выбран. Выберите файл')
         return True
     print(filename)
     if not allowed_file(filename):
-        print("Файл не является .rec")
+        flash("Файл не является .rec")
         return True
     if not check_input_values(params):
-        print("Значения не входят в диапазон")
+        flash("Значения не входят в диапазон")
         return True
     if not check_checkboxes(checkbox_data):
-        print("Выбраны не >= 2 каналов")
+        flash("Выбраны не >= 2 каналов")
         return True
 
 
@@ -66,7 +66,7 @@ def main_page():
 
 @app.route("/loading", methods=["GET"])
 def loading_screen():
-    print('Грузим страничку')
+    print(CONTEXT)
     return render_template("loading.html")
 
 
@@ -77,7 +77,7 @@ def upload_file():
 
     try:
         if 'file' not in request.files:
-            print('File not in request')
+            flash('File not in request')
             return redirect(url_for("main_page"))
 
         file = request.files['file']
@@ -85,7 +85,6 @@ def upload_file():
         params = json.loads(request.form.get('paramsData'))
 
         if checker(params, checkbox_data, file.filename):
-            print('Checker returned True')
             return redirect(url_for('main_page'))
 
         if checkbox_data:
@@ -105,16 +104,13 @@ def upload_file():
         array = [int(CONTEXT[x]) for x in FIELDS_TO_ML]
         array.append(int(CONTEXT["WEIGHT"]) / int(CONTEXT["HEIGHT"]))
         INPUT_CHARACTER = np.array(array, dtype="float32")
-        print(f'Saving file to {filepath}')
         file.save(filepath)
         try:
             DATA = parse_edf(filename, features_to_use)
-            print('Parsing successful')
         except Exception as e:
-            print(f'Error parsing file: {e}')
+            flash(f'Error parsing file: {e}')
             return redirect(url_for('main_page'))
 
-        print('Redirecting to loading screen')
         return redirect(url_for('loading_screen'))
     except Exception as e:
         print(f'An error occurred: {e}')
