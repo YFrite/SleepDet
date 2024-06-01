@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+flask_app/uploads/
 # C extensions
 *.so
 

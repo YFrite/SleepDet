@@ -1,0 +1,125 @@
+import json
+import os
+
+import numpy as np
+from flask import Flask, render_template, request, redirect, url_for, send_file
+from scripts.converter import parse_edf
+from scripts.check_input_values import check_input_values, check_checkboxes
+from scripts.template_report import create_docx_file
+
+app = Flask(__name__)
+app.secret_key = "123123"
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['ALLOWED_EXTENSIONS'] = {'REC', 'rec'}
+FIELDS_TO_ML = ["AGE", "SEX", "HEIGHT", "WEIGHT", "PULSE", "BPSYS", "BPDIA"]
+INPUT_CHARACTER = ""
+DATA = ""
+ITEMS = {}
+PARAMS = {}
+CONTEXT = {
+    "DOCTOR_FULL_NAME": "",
+    "PATIENT_FULL_NAME": "",
+    "SEX": "",
+    "AGE": "",
+    "WEIGHT": "",
+    "HEIGHT": "",
+    "PULSE": "",
+    "BPSYS": "",
+    "BPDIA": "",
+    "TIME_SOUND": "",
+    "TYPES": "",
+    "TIME_PROCESSING": "",
+    "RESULT": "",
+    "COUNT_OF_VIOLATIONS": "",
+    "APNEA_COUNT": "",
+    "HYPOPNEA_COUNT": "",
+    "APNEA_INDEX": "",
+    "HYPOPNEA_INDEX": "",
+    "APNEA_HYPOPNEA_INDEX": "",
+}
+
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+
+
+def checker(params, checkbox_data, filename):
+    if filename == "":
+        print('Файл не выбран. Выберите файл')
+        return True
+    print(filename)
+    if not allowed_file(filename):
+        print("Файл не является .rec")
+        return True
+    if not check_input_values(params):
+        print("Значения не входят в диапазон")
+        return True
+    if not check_checkboxes(checkbox_data):
+        print("Выбраны не >= 2 каналов")
+        return True
+
+
+@app.route('/', methods=['GET', 'POST'])
+def main_page():
+    return render_template('index.html', features=ITEMS["dataset"], params=ITEMS["params"])
+
+
+@app.route('/upload', methods=['GET', 'POST'])
+def upload_file():
+    global INPUT_CHARACTER, DATA
+
+    if 'file' not in request.files:
+        return redirect("/")
+
+    file = request.files['file']
+    checkbox_data = request.form.get('checkboxData')
+    params = json.loads(request.form.get('paramsData'))
+
+    if checker(params, checkbox_data, file.filename):
+        return redirect(url_for('main_page'))
+    if checkbox_data:
+        checkbox_data = json.loads(checkbox_data)
+
+    for key, value in params.items():
+        CONTEXT[key.upper()] = value
+
+    features_to_use = []
+    for key, value in checkbox_data.items():
+        if value:
+            features_to_use.append(key)
+
+    CONTEXT["TYPES"] = str(features_to_use)
+    filename = file.filename
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    array = [int(CONTEXT[x]) for x in FIELDS_TO_ML]
+    array.append(int(CONTEXT["WEIGHT"]) / int(CONTEXT["HEIGHT"]))
+    INPUT_CHARACTER = np.array(array,
+                               dtype="float32")
+    file.save(filepath)
+    try:
+        DATA = parse_edf(filename, features_to_use)
+    except Exception as e:
+        print(e)
+        return redirect(url_for('main_page'))
+
+    return redirect(url_for('loading_screen'))
+
+
+@app.route('/download')
+def download():
+    path = 'static/files/accept_values.json'
+    return send_file(path, as_attachment=True)
+
+
+@app.route("/loading", methods=["GET", "POST"])
+def loading_screen():
+    global DATA, INPUT_CHARACTER
+
+    return render_template("loading.html")
+
+
+if __name__ == '__main__':
+    with open('static/files/data.json', 'r', encoding="UTF-8") as f:
+        ITEMS = json.load(f)
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    app.run(debug=True, host="0.0.0.0", port=5000)

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/style.css') }}">
+    <title>File Upload</title>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+  </head>
+  <body>
+  {% with msg = get_flashed_messages() %}
+        {% if msg %}
+            <div class="alert">
+              <strong class="alert-content">{{ message }}</strong>
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="container">
+      <h1>Диагностика нарушений дыхания во сне</h1>
+      <h2>Загрузите файл с физиологическими показателями</h2>
+      <form id="uploadForm" method="post" enctype="multipart/form-data" action="{{ url_for('upload_file') }}">
+        <div>
+          <input type="file" name="file" required>
+        </div>
+        <h2>Персональные данные</h2>
+        <table>
+          <tr>
+            <td>ФИО врача</td>
+            <td><input type="text" name="doctor_full_name" ></td>
+          </tr>
+          <tr>
+            <td>ФИО пациента</td>
+            <td><input type="text" name="patient_full_name" ></td>
+          </tr>
+
+        </table>
+
+        <h2>Ввод данных пациента</h2>
+        <table>
+          <tr>
+            <th>Название</th>
+            <th>Ввод</th>
+          </tr>
+          <tr>
+            <td>Пол</td>
+            <td>
+              <select id="sex" name='Пол'>
+                <option value="1">Мужчина</option>
+                <option value="0">Женщина</option>
+              </select>
+            </td>
+          </tr>
+          {% for name, value in params.items() %}
+          <tr>
+            <td>{{ value }}</td>
+            <td><input type="text" name="{{ name }}" pattern="[0-9]*" title="Only numbers are allowed" required></td>
+          </tr>
+          {% endfor %}
+        </table>
+        <h2>Список каналов, которые будут использоваться при анализе</h2>
+        <table>
+          <tr>
+            <th>Название канала</th>
+            <th>Использовать?</th>
+          </tr>
+          {% for item in features %}
+          <tr>
+            <td>{{ item }}</td>
+            <td><input type="checkbox" name="{{ item }}" value="true"></td>
+          </tr>
+          {% endfor %}
+        </table>
+        <div>
+          <button type="submit" class="submit-button">Предвидеть наилучшее будущее</button>
+        </div>
+      </form>
+    </div>
+  </body>
+</html>
