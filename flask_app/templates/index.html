@@ -11,11 +11,15 @@
   {% with msg = get_flashed_messages() %}
         {% if msg %}
             <div class="alert">
-              <strong class="alert-content">{{ message }}</strong>
+              <strong class="alert-content">{{ msg }}123123</strong>
             </div>
         {% endif %}
     {% endwith %}
-
+    <div id="overlay">
+      <div class="overlay-content">
+        Ждите, модель предугадывает
+      </div>
+    </div>
     <div class="container">
       <h1>Диагностика нарушений дыхания во сне</h1>
       <h2>Загрузите файл с физиологическими показателями</h2>

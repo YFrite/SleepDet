@@ -1,7 +1,11 @@
 document.addEventListener("DOMContentLoaded", function() {
     const uploadForm = document.getElementById('uploadForm');
+    const overlay = document.getElementById('overlay');
+
     uploadForm.addEventListener('submit', function(event) {
         event.preventDefault();
+        console.log(44)
+        overlay.style.display = 'block';
 
         const formData = new FormData(uploadForm);
         const checkboxes = document.querySelectorAll('input[type="checkbox"]');
@@ -28,16 +32,20 @@ document.addEventListener("DOMContentLoaded", function() {
         .then(response => {
             if (response.redirected) {
                 window.location.href = response.url;
+                overlay.style.display = 'none';
             }
             else{
+                console.log(3)
+                overlay.style.display = 'none';
                 return response.text();
             }
         })
-        .then(data => {
-            console.log(data);
-        })
         .catch(error => {
             console.error('Error:', error);
+            overlay.style.display = 'none';
         });
     });
 });
+
+
+

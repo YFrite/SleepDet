@@ -1,22 +1,27 @@
 import json
 import os
-
+import time
 import numpy as np
+
 from flask import Flask, render_template, request, redirect, url_for, send_file, jsonify, flash
 from scripts.converter import parse_edf
 from scripts.check_input_values import check_input_values, check_checkboxes
 from scripts.template_report import create_docx_file
+from scripts.machine_learner import predict, get_severity
+from threading import Thread
+
 
 app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config["REPORT_FOLDER"] = "reports"
 app.config['ALLOWED_EXTENSIONS'] = {'REC', 'rec'}
 FIELDS_TO_ML = ["AGE", "SEX", "HEIGHT", "WEIGHT", "PULSE", "BPSYS", "BPDIA"]
 INPUT_CHARACTER = ""
-DATA = ""
+DATA = np.array([])
 ITEMS = {}
 PARAMS = {}
-CONTEXT = {
+CONTENT = {
     "DOCTOR_FULL_NAME": "",
     "PATIENT_FULL_NAME": "",
     "SEX": "",
@@ -36,6 +41,7 @@ CONTEXT = {
     "APNEA_INDEX": "",
     "HYPOPNEA_INDEX": "",
     "APNEA_HYPOPNEA_INDEX": "",
+    "SEVERITY": ""
 }
 
 
@@ -47,7 +53,6 @@ def checker(params, checkbox_data, filename):
     if filename == "":
         flash('Файл не выбран. Выберите файл')
         return True
-    print(filename)
     if not allowed_file(filename):
         flash("Файл не является .rec")
         return True
@@ -59,22 +64,25 @@ def checker(params, checkbox_data, filename):
         return True
 
 
+def data_preparation(time_start):
+    global DATA, CONTENT
+    CONTENT["TIME_SOUND"] = round(DATA.shape[1] / 200 / 60, 6)
+    CONTENT["APNEA_INDEX"] = CONTENT["APNEA_COUNT"] / CONTENT["TIME_SOUND"]
+    CONTENT["HYPOPNEA_INDEX"] = CONTENT["HYPOPNEA_COUNT"] / CONTENT["TIME_SOUND"]
+    CONTENT["APNEA_HYPOPNEA_INDEX"] = CONTENT["HYPOPNEA_INDEX"] + CONTENT["APNEA_INDEX"]
+    CONTENT["SEVERITY"] = get_severity(CONTENT["APNEA_HYPOPNEA_INDEX"])
+    CONTENT["TIME_PROCESSING"] = round(time.time() - time_start, 6)
+    CONTENT["SEX"] = "Мужской" if CONTENT["SEX"] else "Женский"
+
 @app.route('/', methods=['GET', 'POST'])
 def main_page():
     return render_template('index.html', features=ITEMS["dataset"], params=ITEMS["params"])
 
 
-@app.route("/loading", methods=["GET"])
-def loading_screen():
-    print(CONTEXT)
-    return render_template("loading.html")
-
-
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_file():
-    print('Зашёл в метод!')
-    global INPUT_CHARACTER, DATA
-
+    global INPUT_CHARACTER, DATA, CONTENT
+    time_start = time.time()
     try:
         if 'file' not in request.files:
             flash('File not in request')
@@ -91,18 +99,18 @@ def upload_file():
             checkbox_data = json.loads(checkbox_data)
 
         for key, value in params.items():
-            CONTEXT[key.upper()] = value
+            CONTENT[key.upper()] = value
 
         features_to_use = []
         for key, value in checkbox_data.items():
             if value:
                 features_to_use.append(key)
 
-        CONTEXT["TYPES"] = str(features_to_use)
+        CONTENT["TYPES"] = str(features_to_use)
         filename = file.filename
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        array = [int(CONTEXT[x]) for x in FIELDS_TO_ML]
-        array.append(int(CONTEXT["WEIGHT"]) / int(CONTEXT["HEIGHT"]))
+        array = [int(CONTENT[x]) for x in FIELDS_TO_ML]
+        array.append(int(CONTENT["WEIGHT"]) / int(CONTENT["HEIGHT"]))
         INPUT_CHARACTER = np.array(array, dtype="float32")
         file.save(filepath)
         try:
@@ -111,7 +119,17 @@ def upload_file():
             flash(f'Error parsing file: {e}')
             return redirect(url_for('main_page'))
 
-        return redirect(url_for('loading_screen'))
+        results = predict(DATA, INPUT_CHARACTER)
+
+        for key, value in results.items():
+            CONTENT[key] = value
+
+        data_preparation(time_start)
+
+        create_docx_file(app.config["REPORT_FOLDER"], CONTENT["PATIENT_FULL_NAME"].replace(" ", "_"), CONTENT)
+
+        return redirect(url_for('download'))
+        # return redirect(url_for('loading_screen'))
     except Exception as e:
         print(f'An error occurred: {e}')
         return jsonify({'error': str(e)}), 500
@@ -119,7 +137,9 @@ def upload_file():
 
 @app.route('/download')
 def download():
-    path = 'static/files/accept_values.json'
+    path = (f'{app.config["REPORT_FOLDER"]}/'
+            f'{CONTENT["PATIENT_FULL_NAME"].replace(" ", "_")}.docx')
+
     return send_file(path, as_attachment=True)
 
 
@@ -127,4 +147,5 @@ if __name__ == '__main__':
     with open('static/files/data.json', 'r', encoding="UTF-8") as f:
         ITEMS = json.load(f)
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    os.makedirs(app.config["REPORT_FOLDER"], exist_ok=True)
     app.run(debug=False, host="0.0.0.0", port=5000)

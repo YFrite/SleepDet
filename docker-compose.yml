@@ -3,6 +3,7 @@ services:
   flask:
     image: python:3.10.0
     container_name: backend-flask
+
     environment:
       - PYTHONUNBUFFERED=True
     volumes:
