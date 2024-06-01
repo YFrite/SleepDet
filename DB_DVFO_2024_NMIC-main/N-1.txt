@@ -1,0 +1,9 @@
+"FileName:D:\Projects\хакатоны\ДФО ЦП\sample (2)\Np 16\Nr 1\N-1.REC"
+"Patient:C0011, NIGHT 1"
+"Recording:Somnologica data file"
+"StartTime:10.дек.1997 23.44.00"
+"StopTime:11.дек.1997 07.45.00"
+"SignalNumber:13"
+"SignalLabel:Airflow"
+"SampleFrequency:20Hz"
+"Physical value uV = (ASCII+420)*0,119189511323004-50
