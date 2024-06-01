@@ -84,6 +84,22 @@ table input[type="text"] {
   transition: background 0.3s ease, transform 0.3s ease;
 }
 
+.alert {
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: linear-gradient(90deg, #4b6cb7, #182848);
+    padding: 15px 20px;
+    border: none;
+    border-radius: 8px;
+    opacity: 95%;
+    color: white;
+    text-align: center;
+
+    margin-bottom: 10px;
+    box-sizing: border-box;
+}
+
 .submit-button:hover {
   background: linear-gradient(90deg, #3a4a9f, #14203d);
   transform: translateY(-2px);
@@ -103,6 +119,7 @@ table input[type="text"] {
 	position: relative;
 	display: inline-block;
 }
+
 .input-file span {
 	position: relative;
 	display: inline-block;
@@ -123,6 +140,7 @@ table input[type="text"] {
 	margin: 0;
 	transition: background-color 0.2s;
 }
+
 .input-file input[type=file] {
 	position: absolute;
 	z-index: -1;
@@ -150,35 +168,23 @@ table input[type="text"] {
 	background-color: #eee;
 }
 
-.alert {
-    top: 0;
-    left: 0;
-    width: 100%;
-    background-color: rgba(139, 0, 58, 0.9);
-    opacity: 80%;
-    color: white;
-    text-align: center;
-    padding: 20px;
-    margin-bottom: 10px;
-    box-sizing: border-box;
-}
 
 .alert-content {
     width: 10%;
-    margin: 0 auto; /* Центрируем содержимое по горизонтали */
+    margin: 0 auto;
 }
 
 #overlay {
   position: fixed;
-  display: none; /* Скрыто по умолчанию */
+  display: none;
   width: 100%;
   height: 100%;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5); /* Полупрозрачный черный фон */
-  z-index: 999; /* Показать над всем контентом */
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
 }
 
 .overlay-content {

@@ -51,17 +51,13 @@ def allowed_file(filename):
 
 def checker(params, checkbox_data, filename):
     if filename == "":
-        flash('Файл не выбран. Выберите файл')
-        return True
+        return 'Файл не выбран. Выберите файл'
     if not allowed_file(filename):
-        flash("Файл не является .rec")
-        return True
+        return "Файл не является .rec"
     if not check_input_values(params):
-        flash("Значения не входят в диапазон")
-        return True
+        return "Значения не входят в диапазон"
     if not check_checkboxes(checkbox_data):
-        flash("Выбраны не >= 2 каналов")
-        return True
+        return "Выбраны не >= 2 каналов"
 
 
 def data_preparation(time_start):
@@ -76,7 +72,8 @@ def data_preparation(time_start):
 
 @app.route('/', methods=['GET', 'POST'])
 def main_page():
-    return render_template('index.html', features=ITEMS["dataset"], params=ITEMS["params"])
+    return render_template('index.html', features=ITEMS["dataset"], params=ITEMS["params"],
+                           error=request.args.get("error", ""))
 
 
 @app.route('/upload', methods=['GET', 'POST'])
@@ -85,15 +82,14 @@ def upload_file():
     time_start = time.time()
     try:
         if 'file' not in request.files:
-            flash('File not in request')
-            return redirect(url_for("main_page"))
+            return redirect(url_for("main_page", error="Файла нет"))
 
         file = request.files['file']
         checkbox_data = request.form.get('checkboxData')
         params = json.loads(request.form.get('paramsData'))
 
-        if checker(params, checkbox_data, file.filename):
-            return redirect(url_for('main_page'))
+        if errors := checker(params, checkbox_data, file.filename):
+            return redirect(url_for('main_page', error=errors))
 
         if checkbox_data:
             checkbox_data = json.loads(checkbox_data)
@@ -116,8 +112,8 @@ def upload_file():
         try:
             DATA = parse_edf(filename, features_to_use)
         except Exception as e:
-            flash(f'Error parsing file: {e}')
-            return redirect(url_for('main_page'))
+            error = (f'Error parsing file: {e}')
+            return redirect(url_for('main_page', error=error))
 
         results = predict(DATA, INPUT_CHARACTER)
 
@@ -129,7 +125,6 @@ def upload_file():
         create_docx_file(app.config["REPORT_FOLDER"], CONTENT["PATIENT_FULL_NAME"].replace(" ", "_"), CONTENT)
 
         return redirect(url_for('download'))
-        # return redirect(url_for('loading_screen'))
     except Exception as e:
         print(f'An error occurred: {e}')
         return jsonify({'error': str(e)}), 500
@@ -148,4 +143,4 @@ if __name__ == '__main__':
         ITEMS = json.load(f)
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     os.makedirs(app.config["REPORT_FOLDER"], exist_ok=True)
-    app.run(debug=False, host="0.0.0.0", port=5000)
+    app.run(debug=True, host="0.0.0.0", port=5000)

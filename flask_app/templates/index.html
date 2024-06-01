@@ -8,19 +8,18 @@
     <script src="{{ url_for('static', filename='scripts/script.js') }}"></script>
   </head>
   <body>
-  {% with msg = get_flashed_messages() %}
-        {% if msg %}
-            <div class="alert">
-              <strong class="alert-content">{{ msg }}123123</strong>
-            </div>
-        {% endif %}
-    {% endwith %}
+
     <div id="overlay">
       <div class="overlay-content">
         Ждите, модель предугадывает
       </div>
     </div>
     <div class="container">
+      {% if error %}
+            <div class="alert">
+              <strong class="alert-content">{{ error }}</strong>
+            </div>
+        {% endif %}
       <h1>Диагностика нарушений дыхания во сне</h1>
       <h2>Загрузите файл с физиологическими показателями</h2>
       <form id="uploadForm" method="post" action="{{ url_for('upload_file') }}" name="uploadForm"
