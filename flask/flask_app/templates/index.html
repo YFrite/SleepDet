@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>File Upload</title>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Upload .rec File</h1>
+      <form id="uploadForm" method="post" enctype="multipart/form-data">
+        <div>
+          <input type="file" name="file">
+        </div>
+        <h2>Items List</h2>
+        <table border="1">
+          <tr>
+            <th>Item Name</th>
+            <th>Select</th>
+          </tr>
+          {% for item in items %}
+          <tr>
+            <td>{{ item }}</td>
+            <td><input type="checkbox" name="{{ item }}"></td>
+          </tr>
+          {% endfor %}
+        </table>
+        <div>
+          <button type="submit">Upload</button>
+        </div>
+      </form>
+    </div>
+  </body>
+</html>
