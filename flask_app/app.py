@@ -2,13 +2,13 @@ import json
 import os
 
 import numpy as np
-from flask import Flask, render_template, request, redirect, url_for, send_file
+from flask import Flask, render_template, request, redirect, url_for, send_file, jsonify
 from scripts.converter import parse_edf
 from scripts.check_input_values import check_input_values, check_checkboxes
 from scripts.template_report import create_docx_file
 
 app = Flask(__name__)
-app.secret_key = "123123"
+app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['ALLOWED_EXTENSIONS'] = {'REC', 'rec'}
 FIELDS_TO_ML = ["AGE", "SEX", "HEIGHT", "WEIGHT", "PULSE", "BPSYS", "BPDIA"]
@@ -64,45 +64,61 @@ def main_page():
     return render_template('index.html', features=ITEMS["dataset"], params=ITEMS["params"])
 
 
+@app.route("/loading", methods=["GET"])
+def loading_screen():
+    print('Грузим страничку')
+    return render_template("loading.html")
+
+
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_file():
+    print('Зашёл в метод!')
     global INPUT_CHARACTER, DATA
 
-    if 'file' not in request.files:
-        return redirect("/")
-
-    file = request.files['file']
-    checkbox_data = request.form.get('checkboxData')
-    params = json.loads(request.form.get('paramsData'))
-
-    if checker(params, checkbox_data, file.filename):
-        return redirect(url_for('main_page'))
-    if checkbox_data:
-        checkbox_data = json.loads(checkbox_data)
-
-    for key, value in params.items():
-        CONTEXT[key.upper()] = value
-
-    features_to_use = []
-    for key, value in checkbox_data.items():
-        if value:
-            features_to_use.append(key)
-
-    CONTEXT["TYPES"] = str(features_to_use)
-    filename = file.filename
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    array = [int(CONTEXT[x]) for x in FIELDS_TO_ML]
-    array.append(int(CONTEXT["WEIGHT"]) / int(CONTEXT["HEIGHT"]))
-    INPUT_CHARACTER = np.array(array,
-                               dtype="float32")
-    file.save(filepath)
     try:
-        DATA = parse_edf(filename, features_to_use)
-    except Exception as e:
-        print(e)
-        return redirect(url_for('main_page'))
+        if 'file' not in request.files:
+            print('File not in request')
+            return redirect(url_for("main_page"))
 
-    return redirect(url_for('loading_screen'))
+        file = request.files['file']
+        checkbox_data = request.form.get('checkboxData')
+        params = json.loads(request.form.get('paramsData'))
+
+        if checker(params, checkbox_data, file.filename):
+            print('Checker returned True')
+            return redirect(url_for('main_page'))
+
+        if checkbox_data:
+            checkbox_data = json.loads(checkbox_data)
+
+        for key, value in params.items():
+            CONTEXT[key.upper()] = value
+
+        features_to_use = []
+        for key, value in checkbox_data.items():
+            if value:
+                features_to_use.append(key)
+
+        CONTEXT["TYPES"] = str(features_to_use)
+        filename = file.filename
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        array = [int(CONTEXT[x]) for x in FIELDS_TO_ML]
+        array.append(int(CONTEXT["WEIGHT"]) / int(CONTEXT["HEIGHT"]))
+        INPUT_CHARACTER = np.array(array, dtype="float32")
+        print(f'Saving file to {filepath}')
+        file.save(filepath)
+        try:
+            DATA = parse_edf(filename, features_to_use)
+            print('Parsing successful')
+        except Exception as e:
+            print(f'Error parsing file: {e}')
+            return redirect(url_for('main_page'))
+
+        print('Redirecting to loading screen')
+        return redirect(url_for('loading_screen'))
+    except Exception as e:
+        print(f'An error occurred: {e}')
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/download')
@@ -111,15 +127,8 @@ def download():
     return send_file(path, as_attachment=True)
 
 
-@app.route("/loading", methods=["GET", "POST"])
-def loading_screen():
-    global DATA, INPUT_CHARACTER
-
-    return render_template("loading.html")
-
-
 if __name__ == '__main__':
     with open('static/files/data.json', 'r', encoding="UTF-8") as f:
         ITEMS = json.load(f)
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=False, host="0.0.0.0", port=5000)

@@ -24,6 +24,20 @@ document.addEventListener("DOMContentLoaded", function() {
         fetch('/upload', {
             method: 'POST',
             body: formData
+        })
+        .then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+            }
+            else{
+                return response.text();
+            }
+        })
+        .then(data => {
+            console.log(data);
+        })
+        .catch(error => {
+            console.error('Error:', error);
         });
     });
 });
