@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import time
 import numpy as np
 
@@ -8,12 +9,14 @@ from scripts.converter import parse_edf
 from scripts.check_input_values import check_input_values, check_checkboxes
 from scripts.template_report import create_docx_file
 from scripts.machine_learner import get_ml_answer, get_severity
+from scripts.dashboard import create_dashboard, create_dashboards
 from flask_app.scripts.pipeline.inference import init_models
 
 app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config["REPORT_FOLDER"] = "reports"
+app.config['SAVE_IMAGES_FOLDER'] = "uploads/images"
 app.config['ALLOWED_EXTENSIONS'] = {'REC', 'rec'}
 FIELDS_TO_ML = ["AGE", "SEX", "HEIGHT", "WEIGHT", "PULSE", "BPSYS", "BPDIA"]
 INPUT_CHARACTER = ""
@@ -113,13 +116,16 @@ def upload_file():
         except Exception as e:
             error = (f'Error parsing file: {e}')
             return redirect(url_for('main_page', error=error))
+
         results = get_ml_answer(DATA, INPUT_CHARACTER)
 
         for key, value in results.items():
             CONTENT[key] = value
 
         data_preparation(time_start)
-        #create_dashboards(features_to_use, DATA)
+
+        create_dashboards(features_to_use, DATA)
+
         create_docx_file(app.config["REPORT_FOLDER"], CONTENT["PATIENT_FULL_NAME"].replace(" ", "_"), CONTENT)
 
         return redirect(url_for('download'))
@@ -141,5 +147,7 @@ if __name__ == '__main__':
         ITEMS = json.load(f)
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     os.makedirs(app.config["REPORT_FOLDER"], exist_ok=True)
+    #shutil.rmtree(app.config['SAVE_IMAGES_FOLDER'])
+    os.makedirs(app.config['SAVE_IMAGES_FOLDER'], exist_ok=True)
     init_models()
     app.run(debug=False, host="0.0.0.0", port=5000)
