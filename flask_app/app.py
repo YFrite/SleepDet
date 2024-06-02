@@ -3,13 +3,12 @@ import os
 import time
 import numpy as np
 
-from flask import Flask, render_template, request, redirect, url_for, send_file, jsonify, flash
+from flask import Flask, render_template, request, redirect, url_for, send_file, jsonify
 from scripts.converter import parse_edf
 from scripts.check_input_values import check_input_values, check_checkboxes
 from scripts.template_report import create_docx_file
-from scripts.machine_learner import predict, get_severity
-from threading import Thread
-
+from scripts.machine_learner import get_ml_answer, get_severity
+from flask_app.scripts.pipeline.inference import init_models
 
 app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
@@ -114,14 +113,13 @@ def upload_file():
         except Exception as e:
             error = (f'Error parsing file: {e}')
             return redirect(url_for('main_page', error=error))
-
-        results = predict(DATA, INPUT_CHARACTER)
+        results = get_ml_answer(DATA, INPUT_CHARACTER)
 
         for key, value in results.items():
             CONTENT[key] = value
 
         data_preparation(time_start)
-
+        #create_dashboards(features_to_use, DATA)
         create_docx_file(app.config["REPORT_FOLDER"], CONTENT["PATIENT_FULL_NAME"].replace(" ", "_"), CONTENT)
 
         return redirect(url_for('download'))
@@ -143,4 +141,5 @@ if __name__ == '__main__':
         ITEMS = json.load(f)
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     os.makedirs(app.config["REPORT_FOLDER"], exist_ok=True)
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    init_models()
+    app.run(debug=False, host="0.0.0.0", port=5000)
