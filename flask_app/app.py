@@ -8,7 +8,7 @@ from flask import Flask, render_template, request, redirect, url_for, send_file,
 from scripts.converter import parse_edf
 from scripts.check_input_values import check_input_values, check_checkboxes
 from scripts.template_report import create_docx_file
-from scripts.machine_learner import get_ml_answer, get_severity
+from scripts.machine_learner import get_ml_answer
 from scripts.dashboard import create_dashboard, create_dashboards
 from flask_app.scripts.pipeline.inference import init_models
 
@@ -42,8 +42,7 @@ CONTENT = {
     "HYPOPNEA_COUNT": "",
     "APNEA_INDEX": "",
     "HYPOPNEA_INDEX": "",
-    "APNEA_HYPOPNEA_INDEX": "",
-    "SEVERITY": ""
+    "APNEA_HYPOPNEA_INDEX": ""
 }
 
 
@@ -68,7 +67,6 @@ def data_preparation(time_start):
     CONTENT["APNEA_INDEX"] = CONTENT["APNEA_COUNT"] / CONTENT["TIME_SOUND"]
     CONTENT["HYPOPNEA_INDEX"] = CONTENT["HYPOPNEA_COUNT"] / CONTENT["TIME_SOUND"]
     CONTENT["APNEA_HYPOPNEA_INDEX"] = CONTENT["HYPOPNEA_INDEX"] + CONTENT["APNEA_INDEX"]
-    CONTENT["SEVERITY"] = get_severity(CONTENT["APNEA_HYPOPNEA_INDEX"])
     CONTENT["TIME_PROCESSING"] = round(time.time() - time_start, 6)
     CONTENT["SEX"] = "Мужской" if CONTENT["SEX"] else "Женский"
 
