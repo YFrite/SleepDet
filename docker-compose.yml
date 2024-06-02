@@ -1,0 +1,15 @@
+version: '3'
+services:
+  flask:
+    image: python:3.10.0
+    container_name: backend-flask
+
+    environment:
+      - PYTHONUNBUFFERED=True
+    volumes:
+      - ./flask_app:/app
+      - ./requirements.txt:/app/requirements.txt
+    working_dir: /app
+    ports:
+      - "5000:5000"
+    command: ["sh", "-c", "pip install -r requirements.txt && python app.py"]
