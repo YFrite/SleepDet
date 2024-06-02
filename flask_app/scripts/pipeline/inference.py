@@ -31,9 +31,9 @@ def predict(table_data: np.ndarray, channels: np.ndarray):
         confidence = classificator(table_data, channels).item()
         has_apnoea = confidence >= 0.5
         if not has_apnoea:
-            return {"RESULT": has_apnoea, "APNEA_COUNT": 0, "HYPOPNEA_COUNT": 0}
+            return {"RESULT": has_apnoea, "APNEA_COUNT": 0, "HYPOPNEA_COUNT": 0, "CONFIDENCE": confidence}
 
         NAp = int(regressor_nap(table_data, channels).item())
         NHyp = int(regressor_nhyp(table_data, channels).item())
 
-        return {"RESULT": has_apnoea, "APNEA_COUNT": NAp, "HYPOPNEA_COUNT": NHyp, "CONFIDENCE": confidence}
+        return {"RESULT": has_apnoea, "APNEA_COUNT": NHyp, "HYPOPNEA_COUNT": NAp, "CONFIDENCE": confidence}

@@ -64,11 +64,11 @@ def checker(params, checkbox_data, filename):
 def data_preparation(time_start):
     global DATA, CONTENT
     CONTENT["TIME_SOUND"] = round(DATA.shape[1] / 200 / 60, 6)
-    CONTENT["APNEA_INDEX"] = CONTENT["APNEA_COUNT"] / CONTENT["TIME_SOUND"]
-    CONTENT["HYPOPNEA_INDEX"] = CONTENT["HYPOPNEA_COUNT"] / CONTENT["TIME_SOUND"]
+    CONTENT["APNEA_INDEX"] = CONTENT["APNEA_COUNT"] / (CONTENT["TIME_SOUND"] / 60)
+    CONTENT["HYPOPNEA_INDEX"] = CONTENT["HYPOPNEA_COUNT"] / (CONTENT["TIME_SOUND"] / 60)
     CONTENT["APNEA_HYPOPNEA_INDEX"] = CONTENT["HYPOPNEA_INDEX"] + CONTENT["APNEA_INDEX"]
     CONTENT["TIME_PROCESSING"] = round(time.time() - time_start, 6)
-    CONTENT["SEX"] = "Мужской" if CONTENT["SEX"] else "Женский"
+    CONTENT["SEX"] = "Мужской" if int(CONTENT["SEX"]) else "Женский"
 
 @app.route('/', methods=['GET', 'POST'])
 def main_page():
